@@ -32,11 +32,12 @@ async def lifespan(app: FastAPI):
         -------
         None"""
      parser = ArgumentParser()
+     parser.add_argument("--alias", type=str, help="alias for client")
      parser.add_argument("--host", type=str, help="host for client")
      parser.add_argument(
         "--port", type=int, help="port for client", default=None
      )
-     parser.add_argument("--id", type=str, help="camera_id")
+     parser.add_argument("--camera_url", type=str, help="url for rstp or 0 for usb")
      args = parser.parse_args()
     
      id1 = args.id
@@ -101,11 +102,12 @@ def do_action(
 if __name__ == "__main__":
     import uvicorn
     parser = ArgumentParser()
+    parser.add_argument("--alias", type=str, help="name of node")
     parser.add_argument("--host", type=str, help="host for client")
     parser.add_argument(
         "--port", type=int, help="port for client", default=None
     )
-    parser.add_argument("--id", type=str, help="camera_id")
+    parser.add_argument("--camera_url", type=str, help="camera_id")
     args = parser.parse_args()
     
     uvicorn.run(
