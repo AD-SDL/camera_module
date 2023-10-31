@@ -113,7 +113,7 @@ def do_action(
         response = {"action_response": "", "action_msg": "", "action_log": ""}
         im_png = cv2.imencode(".png", image[1])
         response["action_msg"] = base64.b64encode(im_png[1].tobytes()).decode()
-        resposne["action_response"] = "succeeded"
+        response["action_response"] = "succeeded"
         print(type(response["action_msg"]))
         return JSONResponse(content=response)
 
