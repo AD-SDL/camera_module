@@ -8,6 +8,7 @@ import base64
 import threading
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse, Response#from a4s_camera_driver.a4s_camera_driver import A4S_camera_DRIVER  # import camera driverworkcell = None
+from wei.core.data_classes import StepFileResponse, StepStatus
 global camera, state, image
 serial_port = '/dev/ttyUSB1'
 local_ip = 'parker.alcf.anl.gov'
@@ -40,7 +41,7 @@ async def lifespan(app: FastAPI):
      parser.add_argument("--camera_url", type=str, help="url for rstp or 0 for usb")
      args = parser.parse_args()
     
-     id1 = args.id
+     id1 = args.camera_url
      try:
             print(id1)
             if id1 == "0":
@@ -85,20 +86,21 @@ async def description():
 async def resources():
     global camera, state
     return JSONResponse(content={"State": state })#camera.get_status() })
-@app.post("/action", responses = {200: {
-            "content": {"image/png": {}}
-        }} , response_class=JSONResponse)
+@app.post("/action")
 def do_action(
     action_handle: str,
     action_vars,
 ):    
     global image
     if action_handle == "take_picture":
-     response={"action_response": "", "action_msg": "", "action_log": ""}
-     im_png = cv2.imencode(".png", image[1])
-     response["action_msg"] = base64.b64encode(im_png[1].tobytes()).decode()
-     print(type(response["action_msg"]))
-     return JSONResponse(content=response)
+     action_vars = json.loads(action_vars)
+     
+     cv2.imwrite(action_vars["file_name"], image[1])
+     return StepFileResponse(
+                action_response=StepStatus.SUCCEEDED,
+                path=action_vars["file_name"],
+                action_log="",
+            )
 if __name__ == "__main__":
     import uvicorn
     parser = ArgumentParser()
