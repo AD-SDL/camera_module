@@ -1,4 +1,4 @@
-include: [compose.yaml]
+include: [../compose.yaml]
 #####################
 # WEI Core Services #
 #####################
@@ -8,13 +8,11 @@ services:
     container_name: wei_server
     ports:
       - 8000:8000
-    env_file: .env
+    env_file: ../.env
     environment:
       - PYTHONUNBUFFERED=1 # Fix weird bug with empty logging
     volumes:
       - ${WORKCELLS_DIR}:/workcell_defs
-      - ${WEI_DATA_DIR}:/home/app/.wei
-      - diaspora_config:/home/app/.diaspora
     command: python3 -m wei.server --workcell /workcell_defs/${WORKCELL_FILENAME}
     depends_on:
       - wei_redis
@@ -23,8 +21,7 @@ services:
     container_name: wei_engine
     volumes:
       - ${WORKCELLS_DIR}:/workcell_defs
-      - ${WEI_DATA_DIR}:/home/app/.wei
-    env_file: .env
+    env_file: ../.env
     environment:
      - PYTHONUNBUFFERED=1 # Fix weird bug with empty logging
     command: python3 -m wei.engine --workcell /workcell_defs/${WORKCELL_FILENAME}
@@ -36,13 +33,4 @@ services:
     container_name: wei_redis
     ports:
       - 6379:6379
-    volumes:
-      - ${REDIS_DIR}:/data
     command: redis-server --save 60 1 --loglevel warning
-
-################
-# Data Storage #
-################
-volumes:
-  diaspora_config:
-    driver: local

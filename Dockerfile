@@ -18,7 +18,7 @@ COPY ./tests camera_module/tests
 RUN --mount=type=cache,target=/root/.cache \
     pip install -e ./camera_module
 
-CMD ["python", "camera_module/src/camera_rest_node.py"]
+CMD ["python", "-m", "camera_rest_node"]
 
 # Add user to video group to access camera
 RUN usermod -a -G video app
