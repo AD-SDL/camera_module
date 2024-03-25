@@ -40,5 +40,5 @@ docker compose up --build
 docker compose up --build -d
 
 # Run the module alongside a simple workcell (for testing)
-docker compose -f wei.compose.yaml up --build -d
+docker compose --profile wei up --build -d
 ```

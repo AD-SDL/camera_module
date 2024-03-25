@@ -17,9 +17,9 @@ checks: # Runs all the pre-commit checks
 	@pre-commit run --all-files || { echo "Checking fixes\n" ; pre-commit run --all-files; }
 
 test: init .env # Runs all the tests
-	@docker compose -f tests/wei.compose.yaml --env-file .env up --build -d
-	@docker compose -f tests/wei.compose.yaml --env-file .env exec camera_module pytest -p no:cacheprovider camera_module
-	@docker compose -f tests/wei.compose.yaml --env-file .env down
+	@docker compose --profile wei up --build -d
+	@docker compose --profile wei exec camera_module pytest -p no:cacheprovider camera_module
+	@docker compose --profile wei down
 
 clean:
 	@rm .env
