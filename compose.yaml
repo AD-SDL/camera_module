@@ -1,7 +1,7 @@
 name: camera_module
 include:
   - path: tests/wei.compose.yaml
-    env: .env
+    env_file: .env
 services:
   camera_module:
     container_name: camera_module
