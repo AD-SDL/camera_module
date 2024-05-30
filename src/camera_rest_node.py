@@ -28,11 +28,6 @@ rest_module = RESTModule(
 rest_module.arg_parser.add_argument("--camera_address", type=str, help="the camera address", default="/dev/video0")
 
 
-@rest_module.startup()
-def startup(state: State):
-     args = rest_module.arg_parser.parse_args
-     state.camera_address = args.camera_address
-     
 @rest_module.action(name="take_picture", description="An action that atkes and returns a picture")
 def take_picture(state: State, 
                  action: ActionRequest,
