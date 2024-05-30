@@ -25,10 +25,14 @@ rest_module = RESTModule(
         model="camera"
         
 )
+rest_module.arg_parser.add_argument("--camera_address", type=str, help="the camera address", default="/dev/video0")
 
 
-
-
+@rest_module.startup()
+def startup(state: State):
+     args = rest_module.arg_parser.parse_args
+     state.camera_address = args.camera_address
+     
 @rest_module.action(name="take_picture", description="An action that atkes and returns a picture")
 def take_picture(state: State, 
                  action: ActionRequest,
@@ -38,7 +42,7 @@ def take_picture(state: State,
         image_path = Path("~/.wei/temp").expanduser() / image_name
         image_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            camera = cv2.VideoCapture(0)
+            camera = cv2.VideoCapture(state.camera_address)
             _, frame = camera.read()
             cv2.imwrite(str(image_path), frame)
             camera.release()
