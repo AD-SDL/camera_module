@@ -6,7 +6,7 @@ from pathlib import Path
 
 import requests
 from wei import ExperimentClient
-from wei.core.data_classes import ModuleAbout, Workcell, WorkflowStatus
+from wei.types import ModuleAbout, Workcell, WorkflowStatus
 
 
 class TestWEI_Base(unittest.TestCase):

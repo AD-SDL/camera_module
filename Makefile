@@ -4,11 +4,6 @@
 
 init: # Do the initial configuration of the project
 	@test -e .env || cp example.env .env
-ifeq ($(shell uname),Darwin)
-	@sed -i '' 's|^PROJECT_PATH=.*|PROJECT_PATH=$(shell pwd | sed 's/\//\\\//g')|' .env
-else
-	@sed -i 's/^PROJECT_PATH=.*/PROJECT_PATH=$(shell pwd | sed 's/\//\\\//g')/' .env
-endif
 
 .env: init
 
