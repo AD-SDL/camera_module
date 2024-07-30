@@ -41,7 +41,7 @@ def take_picture(
     image_path = Path("~/.wei/temp").expanduser() / image_name
     image_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        camera = cv2.VideoCapture(state.camera_address)
+        camera = cv2.VideoCapture()
         _, frame = camera.read()
         cv2.imwrite(str(image_path), frame)
         camera.release()
@@ -51,9 +51,8 @@ def take_picture(
         cv2.imwrite(str(image_path), blank_image)
 
     return StepFileResponse(
-        action_response=StepStatus.SUCCEEDED,
-        path=image_path,
-        action_log="",
+        StepStatus.SUCCEEDED,
+        files={"image": str(image_path)}
     )
 
 
