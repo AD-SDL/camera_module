@@ -24,7 +24,7 @@ rest_module = RESTModule(
     model="camera",
 )
 rest_module.arg_parser.add_argument(
-    "--camera_address", type=str, help="the camera address", default="/dev/video0"
+    "--camera_address", type=str, help="the camera address", default="/dev/video1"
 )
 
 
@@ -41,7 +41,7 @@ def take_picture(
     image_path = Path("~/.wei/temp").expanduser() / image_name
     image_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        camera = cv2.VideoCapture()
+        camera = cv2.VideoCapture(state.camera_address)
         _, frame = camera.read()
         cv2.imwrite(str(image_path), frame)
         camera.release()
