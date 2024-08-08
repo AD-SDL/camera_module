@@ -24,7 +24,7 @@ rest_module = RESTModule(
     model="camera",
 )
 rest_module.arg_parser.add_argument(
-    "--camera_address", type=str, help="the camera address", default="/dev/video0"
+    "--camera_address", type=str, help="the camera address", default="/dev/video1"
 )
 
 
@@ -50,11 +50,7 @@ def take_picture(
         blank_image = np.zeros(shape=[512, 512, 3], dtype=np.uint8)
         cv2.imwrite(str(image_path), blank_image)
 
-    return StepFileResponse(
-        action_response=StepStatus.SUCCEEDED,
-        path=image_path,
-        action_log="",
-    )
+    return StepFileResponse(StepStatus.SUCCEEDED, files={"image": str(image_path)})
 
 
 if __name__ == "__main__":
