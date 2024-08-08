@@ -50,10 +50,7 @@ def take_picture(
         blank_image = np.zeros(shape=[512, 512, 3], dtype=np.uint8)
         cv2.imwrite(str(image_path), blank_image)
 
-    return StepFileResponse(
-        StepStatus.SUCCEEDED,
-        files={"image": str(image_path)}
-    )
+    return StepFileResponse(StepStatus.SUCCEEDED, files={"image": str(image_path)})
 
 
 if __name__ == "__main__":
