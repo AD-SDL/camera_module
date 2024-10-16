@@ -7,8 +7,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 from fastapi.datastructures import State
-from typing_extensions import Annotated
 from wei.modules.rest_module import RESTModule
+from wei.types.module_types import LocalFileModuleActionResult
 from wei.types.step_types import (
     ActionRequest,
     StepFileResponse,
@@ -20,25 +20,32 @@ from wei.utils import extract_version
 rest_module = RESTModule(
     name="camera_node",
     version=extract_version(Path(__file__).parent.parent / "pyproject.toml"),
-    description="An example REST camera  implementation",
+    description="An example REST camera implementation",
     model="camera",
 )
 rest_module.arg_parser.add_argument(
-    "--camera_address", type=str, help="the camera address", default="/dev/video1"
+    "--camera_address",
+    type=str,
+    help="the address of the camera to attach",
+    default="/dev/video1",
 )
 
 
 @rest_module.action(
-    name="take_picture", description="An action that atkes and returns a picture"
+    name="take_picture",
+    description="An action that takes and returns a picture",
+    results=[
+        LocalFileModuleActionResult(
+            label="image", description="the image taken from the camera"
+        ),
+    ],
 )
 def take_picture(
     state: State,
     action: ActionRequest,
-    file_name: Annotated[str, "Name of the file to save"] = "image.jpg",
 ) -> StepResponse:
     """Function to take a picture"""
-    image_name = file_name
-    image_path = Path("~/.wei/temp").expanduser() / image_name
+    image_path = Path("~/.wei/temp").expanduser() / "image.jpg"
     image_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         camera = cv2.VideoCapture(state.camera_address)
