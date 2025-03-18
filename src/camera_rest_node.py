@@ -6,59 +6,49 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from fastapi.datastructures import State
-from wei.modules.rest_module import RESTModule
-from wei.types.module_types import LocalFileModuleActionResult
-from wei.types.step_types import (
-    ActionRequest,
-    StepFileResponse,
-    StepResponse,
-    StepStatus,
-)
-from wei.utils import extract_version
+from typing import Union
+from madsci.common.types.action_types import FileActionResultDefinition
+from madsci.common.types.action_types import ActionResult, ActionSucceeded, ActionFailed
+from madsci.common.types.node_types import RestNodeConfig
+from madsci.node_module.abstract_node_module import action
+from madsci.node_module.rest_node_module import RestNode
+import time
 
-rest_module = RESTModule(
-    name="camera_node",
-    version=extract_version(Path(__file__).parent.parent / "pyproject.toml"),
-    description="An example REST camera implementation",
-    model="camera",
-)
-rest_module.arg_parser.add_argument(
-    "--camera_address",
-    type=str,
-    help="the address of the camera to attach",
-    default="/dev/video1",
-)
+class CameraConfig(RestNodeConfig):
+    """Configuration for the liquid handler node module."""
+
+    camera_address: Union[int, str] = 0
+    """The camera address."""
+    file_path: str = "~/.wei/temp"
 
 
-@rest_module.action(
-    name="take_picture",
-    description="An action that takes and returns a picture",
-    results=[
-        LocalFileModuleActionResult(
-            label="image", description="the image taken from the camera"
-        ),
-    ],
-)
-def take_picture(
-    state: State,
-    action: ActionRequest,
-) -> StepResponse:
-    """Function to take a picture"""
-    image_path = Path("~/.wei/temp").expanduser() / "image.jpg"
-    image_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        camera = cv2.VideoCapture(state.camera_address)
-        _, frame = camera.read()
-        cv2.imwrite(str(image_path), frame)
-        camera.release()
-    except Exception:
-        print("Camera unavailable, returning empty image")
-        blank_image = np.zeros(shape=[512, 512, 3], dtype=np.uint8)
-        cv2.imwrite(str(image_path), blank_image)
 
-    return StepFileResponse(StepStatus.SUCCEEDED, files={"image": str(image_path)})
+class CameraNode(RestNode):
+
+    config_model = CameraConfig
+
+    @action
+    def take_picture(self, focus: float=100
+)   -> ActionResult:
+        """Function to take a picture"""
+        image_path = Path(self.file_path).expanduser() / "image.jpg"
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            camera = cv2.VideoCapture(self.camera_address)
+            camera.set(cv2.CAP_PROP_FOCUS, focus) 
+            for i in range(10):
+                _, frame = camera.read()
+                time.sleep(0.1)
+            cv2.imwrite(str(image_path), frame)
+            camera.release()
+        except Exception:
+            return ActionFailed(
+            errors="Unable to connect to camera"
+        )
+
+        return ActionSucceeded(files={"image": image_path})
 
 
 if __name__ == "__main__":
-    rest_module.start()
+    camera_node = CameraNode()
+    camera_node.start_node()
