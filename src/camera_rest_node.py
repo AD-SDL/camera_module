@@ -3,38 +3,32 @@ REST-based node that interfaces with WEI and provides a USB camera interface
 """
 
 from pathlib import Path
-
+from camera_config import CameraConfig
 import cv2
-import numpy as np
-from typing import Union
 from madsci.common.types.action_types import FileActionResultDefinition
 from madsci.common.types.action_types import ActionResult, ActionSucceeded, ActionFailed
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.abstract_node_module import action
 from madsci.node_module.rest_node_module import RestNode
+from madsci.client.event_client import EventClient
 import time
-
-class CameraConfig(RestNodeConfig):
-    """Configuration for the liquid handler node module."""
-
-    camera_address: Union[int, str] = 0
-    """The camera address."""
-    file_path: str = "~/.wei/temp"
+from typing import Union
 
 
 
 class CameraNode(RestNode):
-
+    
     config_model = CameraConfig
+    logger = EventClient()
 
-    @action
+    @action(name="take_picture", description="take a picture, can set the focus")
     def take_picture(self, focus: float=100
 )   -> ActionResult:
         """Function to take a picture"""
-        image_path = Path(self.file_path).expanduser() / "image.jpg"
+        image_path = Path(self.config.file_path).expanduser() / "image.jpg"
         image_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            camera = cv2.VideoCapture(self.camera_address)
+            camera = cv2.VideoCapture(self.config.camera_address)
             camera.set(cv2.CAP_PROP_FOCUS, focus) 
             for i in range(10):
                 _, frame = camera.read()
@@ -52,3 +46,4 @@ class CameraNode(RestNode):
 if __name__ == "__main__":
     camera_node = CameraNode()
     camera_node.start_node()
+    

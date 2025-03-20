@@ -18,8 +18,8 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - lock
   - shutdown
+  - lock
   - reset
   - unlock
 commands: {}
