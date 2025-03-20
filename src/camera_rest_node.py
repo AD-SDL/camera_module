@@ -4,6 +4,7 @@ REST-based node that interfaces with WEI and provides a USB camera interface
 
 from pathlib import Path
 from camera_config import CameraConfig
+import tempfile
 import cv2
 from madsci.common.types.action_types import FileActionResultDefinition
 from madsci.common.types.action_types import ActionResult, ActionSucceeded, ActionFailed
@@ -17,7 +18,7 @@ from typing import Union
 
 
 class CameraNode(RestNode):
-    
+
     config_model = CameraConfig
     logger = EventClient()
 
@@ -29,7 +30,7 @@ class CameraNode(RestNode):
         image_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             camera = cv2.VideoCapture(self.config.camera_address)
-            camera.set(cv2.CAP_PROP_FOCUS, focus) 
+            camera.set(cv2.CAP_PROP_FOCUS, focus)
             for i in range(10):
                 _, frame = camera.read()
                 time.sleep(0.1)
@@ -46,4 +47,3 @@ class CameraNode(RestNode):
 if __name__ == "__main__":
     camera_node = CameraNode()
     camera_node.start_node()
-    
