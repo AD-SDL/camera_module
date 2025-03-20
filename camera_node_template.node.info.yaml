@@ -18,24 +18,31 @@ capabilities:
   get_resources: false
   get_log: true
   admin_commands:
-  - shutdown
   - lock
   - reset
   - unlock
+  - shutdown
 commands: {}
 is_template: false
 config_defaults: {}
 actions:
   take_picture:
     name: take_picture
-    description: Function to take a picture
+    description: Action that takes a picture using the configured camera. The focus
+      used can be set using the focus parameter.
     args:
       focus:
         name: focus
         description: ''
-        type: float
-        required: false
-        default: 100
+        type: Optional[intNoneType]
+        required: true
+        default: null
+      autofocus:
+        name: autofocus
+        description: ''
+        type: Optional[boolNoneType]
+        required: true
+        default: null
     files: {}
     results: {}
     blocking: false
@@ -43,11 +50,10 @@ config:
   status_update_interval: null
   state_update_interval: null
   event_client_config: null
-  host: 127.0.0.1
+  host: 0.0.0.0
   port: 8000
   protocol: http
   camera_address: 0
-  file_path: ~/.wei/temp
 config_schema:
   $defs:
     EventClientConfig:
@@ -191,9 +197,5 @@ config_schema:
       - type: string
       default: 0
       title: Camera Address
-    file_path:
-      default: ~/.wei/temp
-      title: File Path
-      type: string
   title: CameraConfig
   type: object
