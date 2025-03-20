@@ -1,47 +1,94 @@
 """
-REST-based node that interfaces with WEI and provides a USB camera interface
+REST-based node that interfaces with MADSci and provides a USB camera interface
 """
 
-from pathlib import Path
-from camera_config import CameraConfig
 import tempfile
+from pathlib import Path
+from typing import Optional
+
 import cv2
-from madsci.common.types.action_types import FileActionResultDefinition
-from madsci.common.types.action_types import ActionResult, ActionSucceeded, ActionFailed
-from madsci.common.types.node_types import RestNodeConfig
+from madsci.common.types.action_types import ActionResult, ActionSucceeded
 from madsci.node_module.abstract_node_module import action
 from madsci.node_module.rest_node_module import RestNode
-from madsci.client.event_client import EventClient
-import time
-from typing import Union
 
+from camera_config import CameraConfig
 
 
 class CameraNode(RestNode):
+    """Node that interfaces with MADSci and provides a USB camera interface"""
 
     config_model = CameraConfig
-    logger = EventClient()
+    camera: cv2.VideoCapture = None
 
-    @action(name="take_picture", description="take a picture, can set the focus")
-    def take_picture(self, focus: float=100
-)   -> ActionResult:
-        """Function to take a picture"""
-        image_path = Path(self.config.file_path).expanduser() / "image.jpg"
-        image_path.parent.mkdir(parents=True, exist_ok=True)
+    @action
+    def take_picture(
+        self, focus: Optional[int] = None, autofocus: Optional[bool] = None
+    ) -> ActionResult:
+        """Action that takes a picture using the configured camera. The focus used can be set using the focus parameter."""
+        camera = cv2.VideoCapture(self.config.camera_address)
+        if not camera.isOpened():
+            raise Exception("Unable to connect to camera")
+
+        # * Handle autofocus/refocusing
         try:
-            camera = cv2.VideoCapture(self.config.camera_address)
-            camera.set(cv2.CAP_PROP_FOCUS, focus)
-            for i in range(10):
-                _, frame = camera.read()
-                time.sleep(0.1)
-            cv2.imwrite(str(image_path), frame)
-            camera.release()
-        except Exception:
-            return ActionFailed(
-            errors="Unable to connect to camera"
-        )
+            if focus is not None or autofocus is not None:
+                self.adjust_focus_settings(camera, focus, autofocus)
+        except Exception as e:
+            self.logger.log_error(f"Failed to adjust focus settings: {e}")
 
-        return ActionSucceeded(files={"image": image_path})
+        success, frame = camera.read()
+        if not success:
+            if camera.isOpened():
+                camera.release()
+            raise Exception("Unable to read from camera")
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
+            temp_file_path = Path(temp_file.name)
+            cv2.imwrite(str(temp_file_path), frame)
+        camera.release()
+
+        return ActionSucceeded(files={"image": temp_file_path})
+
+    def adjust_focus_settings(
+        self,
+        camera: cv2.VideoCapture,
+        focus: Optional[int] = None,
+        autofocus: Optional[bool] = None,
+    ) -> None:
+        """
+        Adjusts the camera's focus, if necessary/possible, based on the provided parameters.
+
+        Args:
+            camera (cv2.VideoCapture): The camera object to adjust focus for.
+            focus (Optional[int]): The desired focus value (used if autofocus is disabled).
+            autofocus (Optional[bool]): Whether to enable or disable autofocus.
+
+        Raises:
+            Exception: If the camera does not support autofocus or manual focus.
+            ValueError: If the focus value is out of range.
+        """
+        focus_changed = False
+
+        if autofocus is not None:
+            if not camera.get(cv2.CAP_PROP_AUTOFOCUS):
+                raise Exception("Camera does not support autofocus.")
+            current_autofocus = camera.get(cv2.CAP_PROP_AUTOFOCUS)
+            if current_autofocus != (1 if autofocus else 0):
+                camera.set(cv2.CAP_PROP_AUTOFOCUS, 1 if autofocus else 0)
+                focus_changed = True
+
+        if autofocus is False and focus is not None:
+            if not camera.get(cv2.CAP_PROP_FOCUS):
+                raise Exception("Camera does not support manual focus.")
+            if focus < 0 or focus > 255:
+                raise ValueError("Focus value must be between 0 and 255.")
+            current_focus = camera.get(cv2.CAP_PROP_FOCUS)
+            if current_focus != focus:
+                camera.set(cv2.CAP_PROP_FOCUS, focus)
+                focus_changed = True
+
+        if focus_changed:
+            for _ in range(10):  # Discard 10 frames to allow focus to stabilize
+                camera.read()
 
 
 if __name__ == "__main__":
