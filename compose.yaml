@@ -2,16 +2,15 @@ name: camera_module
 services:
   camera_module:
     container_name: camera_module
-    image: ${IMAGE}
+    image: camera_module
     build:
       context: .
       dockerfile: Dockerfile
       tags:
-        - ${IMAGE}:latest
-        - ${IMAGE}:dev
+        - camera_module:latest
+        - camera_module:dev
     command: python -m camera_rest_node --port 2000
     privileged: true
     env_file: .env
-    volumes:
     ports:
       - 2000:2000
