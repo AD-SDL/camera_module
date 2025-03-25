@@ -8,7 +8,7 @@ from typing import Optional
 
 import cv2
 from madsci.common.types.action_types import ActionResult, ActionSucceeded
-from madsci.node_module.abstract_node_module import action
+from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 
 from camera_config import CameraConfig
@@ -32,6 +32,7 @@ class CameraNode(RestNode):
         # * Handle autofocus/refocusing
         try:
             if focus is not None or autofocus is not None:
+                self.logger.log_info("Adjusting focus settings")
                 self.adjust_focus_settings(camera, focus, autofocus)
         except Exception as e:
             self.logger.log_error(f"Failed to adjust focus settings: {e}")
@@ -69,16 +70,14 @@ class CameraNode(RestNode):
         focus_changed = False
 
         if autofocus is not None:
-            if not camera.get(cv2.CAP_PROP_AUTOFOCUS):
-                raise Exception("Camera does not support autofocus.")
+            self.logger.log_info(f"Setting autofocus to {autofocus}")
             current_autofocus = camera.get(cv2.CAP_PROP_AUTOFOCUS)
             if current_autofocus != (1 if autofocus else 0):
                 camera.set(cv2.CAP_PROP_AUTOFOCUS, 1 if autofocus else 0)
                 focus_changed = True
 
-        if autofocus is False and focus is not None:
-            if not camera.get(cv2.CAP_PROP_FOCUS):
-                raise Exception("Camera does not support manual focus.")
+        if not autofocus and focus is not None:
+            self.logger.log_info(f"Setting focus to {focus}")
             if focus < 0 or focus > 255:
                 raise ValueError("Focus value must be between 0 and 255.")
             current_focus = camera.get(cv2.CAP_PROP_FOCUS)
@@ -87,7 +86,10 @@ class CameraNode(RestNode):
                 focus_changed = True
 
         if focus_changed:
-            for _ in range(10):  # Discard 10 frames to allow focus to stabilize
+            self.logger.log_info(
+                "Focus settings changed. Waiting for focus to stabilize."
+            )
+            for _ in range(30):  # Discard 30 frames to allow focus to stabilize
                 camera.read()
 
 

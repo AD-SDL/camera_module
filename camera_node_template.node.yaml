@@ -19,9 +19,9 @@ capabilities:
   get_log: true
   admin_commands:
   - lock
+  - shutdown
   - reset
   - unlock
-  - shutdown
 commands: {}
 is_template: false
 config_defaults: {}

@@ -19,9 +19,9 @@ capabilities:
   get_log: true
   admin_commands:
   - lock
+  - shutdown
   - reset
   - unlock
-  - shutdown
 commands: {}
 is_template: false
 config_defaults: {}
@@ -34,23 +34,25 @@ actions:
       focus:
         name: focus
         description: ''
-        type: Optional[intNoneType]
-        required: true
+        argument_type: int
+        required: false
         default: null
       autofocus:
         name: autofocus
         description: ''
-        type: Optional[boolNoneType]
-        required: true
+        argument_type: bool
+        required: false
         default: null
+    locations: {}
     files: {}
     results: {}
     blocking: false
+    asynchronous: true
 config:
   status_update_interval: null
   state_update_interval: null
   event_client_config: null
-  host: 0.0.0.0
+  host: 127.0.0.1
   port: 8000
   protocol: http
   camera_address: 0
@@ -79,10 +81,7 @@ config_schema:
           title: Event Client Log Level
           type: integer
         source:
-          anyOf:
-          - $ref: '#/$defs/OwnershipInfo'
-          - type: 'null'
-          default: null
+          $ref: '#/$defs/OwnershipInfo'
           description: Information about the source of the event client.
           title: Source
         log_dir:
@@ -150,6 +149,20 @@ config_schema:
           default: null
           description: The ID of the lab that owns the object.
           title: Lab ID
+        step_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          description: The ID of the step that owns the object.
+          title: Step ID
+        workflow_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          description: The ID of the workflow that owns the object.
+          title: Workflow ID
       title: OwnershipInfo
       type: object
   additionalProperties: true

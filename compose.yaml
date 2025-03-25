@@ -10,6 +10,8 @@ services:
         - camera_module:latest
         - camera_module:dev
     command: python -m camera_rest_node --port 2000
+    volumes:
+      - ./camera_node_template.node.yaml:/home/madsci/camera_node_template.node.yaml
     privileged: true
     env_file: .env
     ports:
