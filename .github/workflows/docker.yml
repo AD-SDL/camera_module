@@ -1,17 +1,12 @@
-name: Docker Build and Publish
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+name: Docker Image Build and Publish
 
 on:
-  push:
+  push: # * Run for every push
     branches: [ "*" ]
-    # Publish semver tags as releases.
     tags: [ '*' ]
-  schedule: # Run on Tuesday's at noon
+  schedule: # Run on Tuesday's at 12:00
     - cron: '0 12 * * 2'
+  workflow_dispatch: # Run manually
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -38,10 +33,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Login against a Docker registry except on PR
+      # Login against a Docker registry
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -73,5 +67,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
-            #cache-from: type=gha
-            #cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

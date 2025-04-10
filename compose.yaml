@@ -2,17 +2,19 @@ name: camera_module
 services:
   camera_module:
     container_name: camera_module
-    image: camera_module
+    image: ghcr.io/ad-sdl/camera_module
+    environment:
+      - USER_ID=${USER_ID:-1000}
+      - GROUP_ID=${GROUP_ID:-1000}
+      - DEFINITION=${DEFINITION:-camera_module/definitions/camera_template.node.yaml}
     build:
       context: .
       dockerfile: Dockerfile
       tags:
-        - camera_module:latest
-        - camera_module:dev
-    command: python -m camera_rest_node --port 2000
+        - ghcr.io/ad-sdl/camera_module:latest
+        - ghcr.io/ad-sdl/camera_module:dev
+    command: python camera_module/src/camera_rest_node.py --definition definitions/camera_node_template.node.yaml
     volumes:
-      - ./camera_node_template.node.yaml:/home/madsci/camera_node_template.node.yaml
+      - ./definitions:/home/madsci/definitions
     privileged: true
-    env_file: .env
-    ports:
-      - 2000:2000
+    network_mode: host
