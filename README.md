@@ -2,7 +2,7 @@
 
 Provides a simple MADSci node for integrating web cameras to capture images.
 
-See `camera_node_template.node.info.yaml` for details on the capabilities of this node, and `camera_node_template.node.yaml` as a template for your own Camera Node definition file.
+See `definitions/camera_node_template.node.info.yaml` for details on the capabilities of this node, and `definitions/camera_node_template.node.yaml` as a template for your own Camera Node definition file.
 
 ## Installation and Usage
 
