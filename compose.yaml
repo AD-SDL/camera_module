@@ -2,57 +2,19 @@ name: camera_module
 services:
   camera_module:
     container_name: camera_module
-    image: ${IMAGE}
+    image: ghcr.io/ad-sdl/camera_module
+    environment:
+      - USER_ID=${USER_ID:-1000}
+      - GROUP_ID=${GROUP_ID:-1000}
+      - DEFINITION=${DEFINITION:-camera_module/definitions/camera_template.node.yaml}
     build:
       context: .
       dockerfile: Dockerfile
       tags:
-        - ${IMAGE}:latest
-        - ${IMAGE}:dev
-    command: python -m camera_rest_node --port 2000
+        - ghcr.io/ad-sdl/camera_module:latest
+        - ghcr.io/ad-sdl/camera_module:dev
+    command: python camera_module/src/camera_rest_node.py --definition definitions/camera_node_template.node.yaml
+    volumes:
+      - ./definitions:/home/madsci/definitions
     privileged: true
-    env_file: .env
-    volumes:
-      - ${DEVICE}:/dev/video0
-      # - ./src:/home/app/camera_module/src
-      # - ./tests:/home/app/camera_module/tests
-    ports:
-      - 2000:2000
-
-  #####################
-  # WEI Core Services #
-  #####################
-  wei_server:
-    image: ghcr.io/ad-sdl/wei
-    container_name: wei_server
-    ports:
-      - 8000:8000
-    env_file: .env
-    environment:
-      - PYTHONUNBUFFERED=1 # Fix weird bug with empty logging
-    volumes:
-      - ${WORKCELLS_DIR}:/workcell_defs
-    command: python3 -m wei.server --workcell /workcell_defs/${WORKCELL_FILENAME}
-    depends_on:
-      - wei_redis
-    profiles: [wei]
-  wei_engine:
-    image: ghcr.io/ad-sdl/wei
-    container_name: wei_engine
-    volumes:
-      - ${WORKCELLS_DIR}:/workcell_defs
-    env_file: .env
-    environment:
-     - PYTHONUNBUFFERED=1 # Fix weird bug with empty logging
-    command: python3 -m wei.engine --workcell /workcell_defs/${WORKCELL_FILENAME}
-    depends_on:
-      - wei_redis
-      - wei_server
-    profiles: [wei]
-  wei_redis:
-    image: redis
-    container_name: wei_redis
-    ports:
-      - 6379:6379
-    command: redis-server --save 60 1 --loglevel warning
-    profiles: [wei]
+    network_mode: host
