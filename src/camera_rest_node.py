@@ -12,6 +12,7 @@ from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 
 from camera_config import CameraConfig
+from pyzbar.pyzbar import decode
 
 
 class CameraNode(RestNode):
@@ -48,6 +49,45 @@ class CameraNode(RestNode):
         camera.release()
 
         return ActionSucceeded(files={"image": temp_file_path})
+    
+    @action
+    def read_barcode(
+        self, 
+        focus: Optional[int] = None,
+        autofocus: Optional[bool] = None,
+    ) -> ActionResult:
+        """
+        Takes an image and returns the values of any barcodes present in the image. Camera focus can be adjusted using the provided parameters if necessary. 
+
+        Args: 
+            camera (cv2.VideoCapture): The camera object to adjust focus for.
+            focus (Optional[int]): The desired focus value (used if autofocus is disabled).
+            autofocus (Optional[bool]): Whether to enable or disable autofocus.
+
+        Returns: 
+            ActionSucceded regardless of if barcode is collected or not. 
+            Barcode field in ActionResult data dictionary will contain 'None' if no barcode was collected
+
+        """
+        try: 
+            # take an image and collect the image path
+            action_result = self.take_picture(focus=focus, autofocus=autofocus)   
+            image_path = action_result.files['image']
+
+            # try to collect the barcode from the image
+            image = cv2.imread(image_path)
+            barcode = None
+
+            all_detected_barcodes = decode(image)
+            if all_detected_barcodes: 
+                # Note: only collects the first in a potential list of barcodes
+                barcode = s = all_detected_barcodes[0].data.decode("utf-8")   
+
+        except Error as e: 
+            raise e
+        
+        return ActionSucceeded(data={"barcode": barcode})  
+
 
     def adjust_focus_settings(
         self,
@@ -91,6 +131,15 @@ class CameraNode(RestNode):
             )
             for _ in range(30):  # Discard 30 frames to allow focus to stabilize
                 camera.read()
+
+
+    
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
