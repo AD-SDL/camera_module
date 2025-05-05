@@ -21,6 +21,8 @@ pip install .
 python -m camera_rest_node --host 127.0.0.1 --port 2000
 ```
 
+Note: on Mac or Linux, you'll need to install the `zbar` dependencies manually (see https://pypi.org/project/pyzbar/ for details).
+
 ### Docker
 
 - We provide a `Dockerfile` and example docker compose file (`compose.yaml`) to run this node dockerized.

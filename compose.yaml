@@ -6,7 +6,6 @@ services:
     environment:
       - USER_ID=${USER_ID:-1000}
       - GROUP_ID=${GROUP_ID:-1000}
-      - DEFINITION=${DEFINITION:-camera_module/definitions/camera_template.node.yaml}
     build:
       context: .
       dockerfile: Dockerfile

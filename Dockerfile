@@ -8,6 +8,10 @@ LABEL org.opencontainers.image.licenses=MIT
 # Module specific logic goes below here #
 #########################################
 
+RUN apt-get update && \
+    apt-get install -y libzbar0 && \
+    rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apt/archives/*
+
 RUN mkdir -p camera_module
 
 COPY ./src camera_module/src
