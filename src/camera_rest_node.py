@@ -86,7 +86,7 @@ class CameraNode(RestNode):
         except Exception as e:
             raise e
 
-        return ActionSucceeded(data={"barcode": barcode})
+        return ActionSucceeded(data={"barcode": barcode}, files={"image": image_path})
 
     def adjust_focus_settings(
         self,
@@ -129,6 +129,9 @@ class CameraNode(RestNode):
                 "Focus settings changed. Waiting for focus to stabilize."
             )
             for _ in range(30):  # Discard 30 frames to allow focus to stabilize
+                camera.read()
+        else:
+            for _ in range(5): # Discard 5 frames in case the camera needs a moment for startup
                 camera.read()
 
 
