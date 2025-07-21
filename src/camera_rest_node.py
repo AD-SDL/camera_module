@@ -17,6 +17,7 @@ from camera_config import CameraConfig
 class CameraNode(RestNode):
     """Node that interfaces with MADSci and provides a USB camera interface"""
 
+    config: CameraConfig = CameraConfig()
     config_model = CameraConfig
     camera: cv2.VideoCapture = None
 

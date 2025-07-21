@@ -1,0 +1,7 @@
+node_name: camera_node_template
+node_id: 01JPN93A0G54674CMHJ0N04PB2
+node_description: A template for defining a camera node
+node_type: device
+module_name: camera_module
+module_version: 2.1.0
+capabilities: null

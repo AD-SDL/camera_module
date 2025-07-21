@@ -16,7 +16,7 @@ source .venv/bin/activate
 # Install the module and dependencies in the venv
 pip install .
 # Run the environment
-python -m camera_rest_node --host 127.0.0.1 --port 2000
+python -m camera_rest_node --node_url http://localhost:2000
 ```
 
 ### Docker
