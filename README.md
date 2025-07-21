@@ -1,6 +1,8 @@
 # camera_module
 
-A simple module that supports capturing images with a USB camera or other video device.
+Provides a simple MADSci node for integrating web cameras to capture images.
+
+See `camera_node_template.node.info.yaml` for details on the capabilities of this node, and `camera_node_template.node.yaml` as a template for your own Camera Node definition file.
 
 ## Installation and Usage
 
@@ -21,4 +23,4 @@ python -m camera_rest_node --node_url http://localhost:2000
 
 ### Docker
 
-You can use the Docker Compose File (`compose.yaml`) as part of a docker compose setup, or to inform a docker run command, to use this node via docker. Note that you can set the container user's id and group id using the `USER_ID` and `GROUP_ID` variable.
+You can use the `Dockerfile` and Docker Compose File (`compose.yaml`) as part of a docker (compose) setup. Note that you can set the container user's id and group id by setting the `USER_ID` and `GROUP_ID` variables in the container's environment.
