@@ -4,7 +4,7 @@ REST-based node that interfaces with MADSci and provides a USB camera interface
 
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import cv2
 from madsci.common.types.action_types import ActionResult, ActionSucceeded
@@ -24,7 +24,7 @@ class CameraNode(RestNode):
     @action
     def take_picture(
         self, focus: Optional[int] = None, autofocus: Optional[bool] = None
-    ) -> ActionResult:
+    ) -> Annotated[Path, "The picture taken by the camera"]:
         """Action that takes a picture using the configured camera. The focus used can be set using the focus parameter."""
         camera = cv2.VideoCapture(self.config.camera_address)
         if not camera.isOpened():
@@ -48,14 +48,14 @@ class CameraNode(RestNode):
             cv2.imwrite(str(temp_file_path), frame)
         camera.release()
 
-        return ActionSucceeded(files={"image": temp_file_path})
+        return temp_file_path
 
     @action
     def read_barcode(
         self,
         focus: Optional[int] = None,
         autofocus: Optional[bool] = None,
-    ) -> ActionResult:
+    ) -> tuple[Annotated[str, "The barcode read from the image, or None if no barcode was found"], Annotated[Path, "The picture taken by the camera"]]:
         """
         Takes an image and returns the values of any barcodes present in the image. Camera focus can be adjusted using the provided parameters if necessary.
 
@@ -71,9 +71,8 @@ class CameraNode(RestNode):
         """
         try:
             # take an image and collect the image path
-            action_result = self.take_picture(focus=focus, autofocus=autofocus)
-            image_path = action_result.files["image"]
-
+            image_path = self.take_picture(focus=focus, autofocus=autofocus)
+           
             # try to collect the barcode from the image
             image = cv2.imread(image_path)
             barcode = None
@@ -86,7 +85,7 @@ class CameraNode(RestNode):
         except Exception as e:
             raise e
 
-        return ActionSucceeded(data={"barcode": barcode}, files={"image": image_path})
+        return barcode, image_path
 
     def adjust_focus_settings(
         self,
