@@ -4,48 +4,112 @@ REST-based node that interfaces with MADSci and provides a USB camera interface
 
 import tempfile
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Union
 
 import cv2
+from madsci.common.types.auth_types import OwnershipInfo
+from madsci.common.types.node_types import RestNodeConfig
+from madsci.common.types.resource_types import Slot
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 from pyzbar.pyzbar import decode
 
-from camera_config import CameraConfig
+
+class CameraNodeConfig(RestNodeConfig):
+    """Configuration for the camera node module."""
+
+    camera_address: Union[int, str] = 0
+    """The camera address, either a number for windows or a device path in Linux/Mac."""
 
 
 class CameraNode(RestNode):
     """Node that interfaces with MADSci and provides a USB camera interface"""
 
-    config_model = CameraConfig
+    config: CameraNodeConfig = CameraNodeConfig()
+    config_model = CameraNodeConfig
     camera: cv2.VideoCapture = None
+
+    def startup_handler(self) -> None:
+        """Called to (re)initialize the node. Should be used to open connections to devices or initialize any other resources."""
+
+        if self.resource_client:
+            self.resource_owner = OwnershipInfo(node_id=self.node_definition.node_id)
+
+            # Create picture capture deck template
+            capture_deck_slot = Slot(
+                resource_name="camera_capture_deck",
+                resource_class="CameraCaptureDeck",
+                capacity=1,
+                attributes={
+                    "slot_type": "capture_deck",
+                    "can_capture": True,
+                    "light": "on",
+                    "description": "Camera capture deck where items are placed for imaging",
+                },
+            )
+
+            self.resource_client.init_template(
+                resource=capture_deck_slot,
+                template_name="camera_capture_deck_slot",
+                description="Template for camera capture deck slot. Represents the position where items are placed for picture taking.",
+                required_overrides=["resource_name"],
+                tags=["camera", "capture", "deck", "slot", "imaging"],
+                created_by=self.node_definition.node_id,
+                version="1.0.0",
+            )
+
+            # Initialize capture deck resource
+            deck_resource_name = "camera_capture_deck_" + str(
+                self.node_definition.node_name
+            )
+            self.capture_deck = self.resource_client.create_resource_from_template(
+                template_name="camera_capture_deck_slot",
+                resource_name=deck_resource_name,
+                add_to_database=True,
+            )
+            self.logger.log(
+                f"Initialized capture deck resource from template: {self.capture_deck.resource_id}"
+            )
+        else:
+            self.capture_deck = None
+
+        self.camera = cv2.VideoCapture(self.config.camera_address)
+        if not self.camera.isOpened():
+            raise Exception("Unable to connect to camera")
+        self.logger.log("Camera node initialized!")
+
+    def state_handler(self) -> None:
+        """Periodically called to update the current state of the node."""
+        if self.camera is not None:
+            self.node_state = {"camera_status": "connected"}
+            self.logger.log("Camera is operational.")
+        else:
+            self.node_state = {"camera_status": "disconnected"}
+            self.logger.log_warning("Camera is not connected.")
 
     @action
     def take_picture(
         self, focus: Optional[int] = None, autofocus: Optional[bool] = None
     ) -> Annotated[Path, "The picture taken by the camera"]:
         """Action that takes a picture using the configured camera. The focus used can be set using the focus parameter."""
-        camera = cv2.VideoCapture(self.config.camera_address)
-        if not camera.isOpened():
-            raise Exception("Unable to connect to camera")
 
         # * Handle autofocus/refocusing
         try:
             if focus is not None or autofocus is not None:
                 self.logger.log_info("Adjusting focus settings")
-                self.adjust_focus_settings(camera, focus, autofocus)
+                self.adjust_focus_settings(self.camera, focus, autofocus)
         except Exception as e:
             self.logger.log_error(f"Failed to adjust focus settings: {e}")
 
-        success, frame = camera.read()
+        success, frame = self.camera.read()
         if not success:
-            if camera.isOpened():
-                camera.release()
+            if self.camera.isOpened():
+                self.camera.release()
             raise Exception("Unable to read from camera")
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
             temp_file_path = Path(temp_file.name)
             cv2.imwrite(str(temp_file_path), frame)
-        camera.release()
+        self.camera.release()
 
         return temp_file_path
 
