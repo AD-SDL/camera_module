@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import cv2
-from madsci.common.types.action_types import ActionResult, ActionSucceeded
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
 from pyzbar.pyzbar import decode
@@ -55,7 +54,12 @@ class CameraNode(RestNode):
         self,
         focus: Optional[int] = None,
         autofocus: Optional[bool] = None,
-    ) -> tuple[Annotated[str, "The barcode read from the image, or None if no barcode was found"], Annotated[Path, "The picture taken by the camera"]]:
+    ) -> tuple[
+        Annotated[
+            str, "The barcode read from the image, or None if no barcode was found"
+        ],
+        Annotated[Path, "The picture taken by the camera"],
+    ]:
         """
         Takes an image and returns the values of any barcodes present in the image. Camera focus can be adjusted using the provided parameters if necessary.
 
@@ -72,7 +76,7 @@ class CameraNode(RestNode):
         try:
             # take an image and collect the image path
             image_path = self.take_picture(focus=focus, autofocus=autofocus)
-           
+
             # try to collect the barcode from the image
             image = cv2.imread(image_path)
             barcode = None
@@ -130,7 +134,9 @@ class CameraNode(RestNode):
             for _ in range(30):  # Discard 30 frames to allow focus to stabilize
                 camera.read()
         else:
-            for _ in range(5): # Discard 5 frames in case the camera needs a moment for startup
+            for _ in range(
+                5
+            ):  # Discard 5 frames in case the camera needs a moment for startup
                 camera.read()
 
 
