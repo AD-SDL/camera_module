@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:b54443212dbcbb6bf168678b7b4b7cb1410e08ee99d62d253eb9e9290cdf64b2"
+content_hash = "sha256:d05034ab58ec2d1b5f46e8dc9e0cf76912de53d28cf29eacf53fe46d80a63c0f"
 
 [[metadata.targets]]
 requires_python = ">=3.9.1"
@@ -1408,6 +1408,21 @@ files = [
     {file = "PyYAML-6.0.2-cp39-cp39-win32.whl", hash = "sha256:6395c297d42274772abc367baaa79683958044e5d3835486c16da75d2a694631"},
     {file = "PyYAML-6.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:39693e1f8320ae4f43943590b49779ffb98acb81f788220ea932a6b6c51004d8"},
     {file = "pyyaml-6.0.2.tar.gz", hash = "sha256:d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"},
+]
+
+[[package]]
+name = "pyzbar"
+version = "0.1.9"
+summary = "Read one-dimensional barcodes and QR codes from Python 2 and 3."
+groups = ["default"]
+dependencies = [
+    "enum34>=1.1.6; python_version == \"2.7\"",
+    "pathlib>=1.0.1; python_version == \"2.7\"",
+]
+files = [
+    {file = "pyzbar-0.1.9-py2.py3-none-any.whl", hash = "sha256:4559628b8192feb25766d954b36a3753baaf5c97c03135aec7e4a026036b475d"},
+    {file = "pyzbar-0.1.9-py2.py3-none-win32.whl", hash = "sha256:8f4c5264c9c7c6b9f20d01efc52a4eba1ded47d9ba857a94130afe33703eb518"},
+    {file = "pyzbar-0.1.9-py2.py3-none-win_amd64.whl", hash = "sha256:13e3ee5a2f3a545204a285f41814d5c0db571967e8d4af8699a03afc55182a9c"},
 ]
 
 [[package]]
