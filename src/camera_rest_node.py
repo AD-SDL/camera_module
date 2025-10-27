@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated, Optional, Union
 
 import cv2
+from madsci.common.ownership import get_current_ownership_info
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import Slot
 from madsci.node_module.helpers import action
@@ -62,6 +63,7 @@ class CameraNode(RestNode):
             template_name="camera_capture_deck_slot",
             resource_name=deck_resource_name,
             add_to_database=True,
+            overrides={"owner": get_current_ownership_info().model_dump(mode="json")},
         )
         self.logger.log(
             f"Initialized capture deck resource from template: {self.capture_deck.resource_id}"
