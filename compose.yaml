@@ -12,7 +12,7 @@ services:
       tags:
         - ghcr.io/ad-sdl/camera_module:latest
         - ghcr.io/ad-sdl/camera_module:dev
-    command: python camera_module/src/camera_rest_node.py --definition definitions/camera_node_template.node.yaml
+    command: python camera_module/src/camera_rest_node.py --node_definition definitions/camera_node_template.node.yaml
     volumes:
       - ./definitions:/home/madsci/definitions
     privileged: true

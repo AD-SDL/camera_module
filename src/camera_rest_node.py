@@ -4,7 +4,7 @@ REST-based node that interfaces with MADSci and provides a USB camera interface
 
 import tempfile
 from pathlib import Path
-from typing import Annotated, Optional, Union
+from typing import Annotated, Any, Optional, Union
 
 import cv2
 from madsci.common.ownership import get_current_ownership_info
@@ -12,7 +12,12 @@ from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import Slot
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
-from pyzbar.pyzbar import decode
+from pydantic import field_validator
+
+try:
+    from pyzbar.pyzbar import decode
+except ImportError:
+    print("pyzbar not found, barcode reading functionality will be disabled.")  # noqa: T201
 
 
 class CameraNodeConfig(RestNodeConfig):
@@ -20,6 +25,15 @@ class CameraNodeConfig(RestNodeConfig):
 
     camera_address: Union[int, str] = 0
     """The camera address, either a number for windows or a device path in Linux/Mac."""
+
+    @field_validator("camera_address", mode="after")
+    @classmethod
+    def ensure_int_camera_address(cls, v: Any) -> Union[int, str]:
+        """Validates that, if the camera address is a string that can be converted to an integer, it does so."""
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return v
 
 
 class CameraNode(RestNode):
@@ -78,7 +92,6 @@ class CameraNode(RestNode):
         """Periodically called to update the current state of the node."""
         if self.camera is not None:
             self.node_state = {"camera_status": "connected"}
-            self.logger.log("Camera is operational.")
         else:
             self.node_state = {"camera_status": "disconnected"}
             self.logger.log_warning("Camera is not connected.")
@@ -116,7 +129,8 @@ class CameraNode(RestNode):
         autofocus: Optional[bool] = None,
     ) -> tuple[
         Annotated[
-            str, "The barcode read from the image, or None if no barcode was found"
+            str,
+            "The barcode read from the image, or an empty string if no barcode was found",
         ],
         Annotated[Path, "The picture taken by the camera"],
     ]:
@@ -139,8 +153,10 @@ class CameraNode(RestNode):
 
             # try to collect the barcode from the image
             image = cv2.imread(image_path)
-            barcode = None
+            barcode = ""
 
+            if "decode" not in globals():
+                raise ImportError("pyzbar is not installed, cannot read barcodes.")
             all_detected_barcodes = decode(image)
             if all_detected_barcodes:
                 # Note: only collects the first in a potential list of barcodes
