@@ -82,35 +82,35 @@ class CameraNode(RestNode):
 
         # Initialize camera interface
         self.camera_interface = CameraInterface(self.config.camera_address)
-        try:
-            self.camera_interface.connect()
-            if self.camera_interface.is_connected():
-                self.logger.log("Camera node initialized!")
-        except Exception as e:
-            self.logger.log_error(f"Failed to connect to camera: {e}")
-            raise
+        # Test camera connection
+        if self.camera_interface.test_connection():
+            self.logger.log("Camera node initialized!")
+        else:
+            self.logger.log_error("Failed to connect to camera during initialization")
+            raise Exception("Unable to connect to camera")
 
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
         camera_status = "disconnected"
         try:
-            if (
-                self.camera_interface is not None
-                and self.camera_interface.is_connected()
-            ):
-                camera_status = "connected"
-            else:
-                try:
-                    self.camera_interface.connect()
-                    if self.camera_interface.is_connected():
-                        camera_status = "connected"
-                except Exception:
+            if self.camera_interface is not None:
+                # Test if camera can be connected
+                if self.camera_interface.test_connection():
+                    camera_status = "connected"
+                else:
                     camera_status = "disconnected"
                     if not self.state_error_latch:
-                        self.logger.log_error(traceback.format_exc())
-                        self.node_status.errors.append(traceback.format_exc())
+                        self.logger.log_error("Camera connection test failed")
+                        self.node_status.errors.append("Camera connection test failed")
                         self.node_status.errored = True
                     self.state_error_latch = True
+        except Exception:
+            camera_status = "disconnected"
+            if not self.state_error_latch:
+                self.logger.log_error(traceback.format_exc())
+                self.node_status.errors.append(traceback.format_exc())
+                self.node_status.errored = True
+            self.state_error_latch = True
         finally:
             if camera_status == "connected":
                 self.state_error_latch = False
