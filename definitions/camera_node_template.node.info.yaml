@@ -1,9 +1,9 @@
-node_name: camera_node_template.node
+node_name: camera_node_template
 node_id: 01K9T47YGD515GTRJJ0Y2HNR6F
 node_description: null
 node_type: device
 module_name: camera_node
-module_version: 2.1.0
+module_version: 3.0.0
 capabilities:
   get_info: true
   get_state: true

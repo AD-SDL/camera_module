@@ -11,9 +11,13 @@ import cv2
 
 try:
     from pyzbar.pyzbar import decode
-except ImportError:
+except Exception:
+    import traceback
+
     decode = None
-    print("pyzbar not found, barcode reading functionality will be disabled.")  # noqa: T201
+    print(  # noqa: T201
+        f"pyzbar not found, barcode reading functionality will be disabled. Error: {traceback.format_exc()}"
+    )
 
 
 class CameraInterface:
