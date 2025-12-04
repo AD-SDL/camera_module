@@ -36,7 +36,7 @@ class CameraInterface:
     @staticmethod
     def _validate_camera_address(camera_address: Union[int, str]) -> Union[int, str]:
         """
-        Validates that, if the camera address is a string that can be converted to an integer, it does so.
+        Ensure that integer camera addresses aren't mistakenly treated as strings.
 
         Args:
             camera_address: The camera address to validate.
@@ -160,7 +160,9 @@ class CameraInterface:
         barcode = ""
 
         if decode is None:
-            raise ImportError("pyzbar is not installed, cannot read barcodes.")
+            raise ImportError(
+                "pyzbar is not installed or there were errors importing it (see console log for error), cannot read barcodes."
+            )
 
         all_detected_barcodes = decode(image)
         if all_detected_barcodes:
