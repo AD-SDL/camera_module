@@ -2,17 +2,18 @@
 REST-based node that interfaces with MADSci and provides a USB camera interface
 """
 
-import tempfile
+import traceback
 from pathlib import Path
-from typing import Annotated, Optional, Union
+from typing import Annotated, Any, Optional, Union
 
-import cv2
 from madsci.common.ownership import get_current_ownership_info
 from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import Slot
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
-from pyzbar.pyzbar import decode
+from pydantic import field_validator
+
+from camera_interface import CameraInterface
 
 
 class CameraNodeConfig(RestNodeConfig):
@@ -21,13 +22,23 @@ class CameraNodeConfig(RestNodeConfig):
     camera_address: Union[int, str] = 0
     """The camera address, either a number for windows or a device path in Linux/Mac."""
 
+    @field_validator("camera_address", mode="after")
+    @classmethod
+    def ensure_int_camera_address(cls, v: Any) -> Union[int, str]:
+        """Validates that, if the camera address is a string that can be converted to an integer, it does so."""
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return v
+
 
 class CameraNode(RestNode):
     """Node that interfaces with MADSci and provides a USB camera interface"""
 
     config: CameraNodeConfig = CameraNodeConfig()
     config_model = CameraNodeConfig
-    camera: cv2.VideoCapture = None
+    camera_interface: Optional[CameraInterface] = None
+    state_error_latch: bool = False
 
     def startup_handler(self) -> None:
         """Called to (re)initialize the node. Should be used to open connections to devices or initialize any other resources."""
@@ -69,19 +80,42 @@ class CameraNode(RestNode):
             f"Initialized capture deck resource from template: {self.capture_deck.resource_id}"
         )
 
-        self.camera = cv2.VideoCapture(self.config.camera_address)
-        if not self.camera.isOpened():
+        # Initialize camera interface
+        self.camera_interface = CameraInterface(self.config.camera_address)
+        # Test camera connection
+        if self.camera_interface.test_connection():
+            self.logger.log("Camera node initialized!")
+        else:
+            self.logger.log_error("Failed to connect to camera during initialization")
             raise Exception("Unable to connect to camera")
-        self.logger.log("Camera node initialized!")
 
     def state_handler(self) -> None:
         """Periodically called to update the current state of the node."""
-        if self.camera is not None:
-            self.node_state = {"camera_status": "connected"}
-            self.logger.log("Camera is operational.")
-        else:
-            self.node_state = {"camera_status": "disconnected"}
-            self.logger.log_warning("Camera is not connected.")
+        camera_status = "disconnected"
+        try:
+            if self.camera_interface is not None:
+                # Test if camera can be connected
+                if self.camera_interface.test_connection():
+                    camera_status = "connected"
+                else:
+                    camera_status = "disconnected"
+                    if not self.state_error_latch:
+                        self.logger.log_error("Camera connection test failed")
+                        self.node_status.errors.append("Camera connection test failed")
+                        self.node_status.errored = True
+                    self.state_error_latch = True
+        except Exception:
+            camera_status = "disconnected"
+            if not self.state_error_latch:
+                self.logger.log_error(traceback.format_exc())
+                self.node_status.errors.append(traceback.format_exc())
+                self.node_status.errored = True
+            self.state_error_latch = True
+        finally:
+            if camera_status == "connected":
+                self.state_error_latch = False
+                self.node_status.errored = False
+            self.node_state = {"camera_status": camera_status}
 
     @action
     def take_picture(
@@ -89,25 +123,18 @@ class CameraNode(RestNode):
     ) -> Annotated[Path, "The picture taken by the camera"]:
         """Action that takes a picture using the configured camera. The focus used can be set using the focus parameter."""
 
-        # * Handle autofocus/refocusing
+        if self.camera_interface is None:
+            raise Exception("Camera interface is not initialized")
+
         try:
-            if focus is not None or autofocus is not None:
-                self.logger.log_info("Adjusting focus settings")
-                self.adjust_focus_settings(self.camera, focus, autofocus)
+            image_path = self.camera_interface.take_picture(
+                focus=focus, autofocus=autofocus
+            )
+            self.logger.log_info(f"Picture taken and saved to {image_path}")
+            return image_path
         except Exception as e:
-            self.logger.log_error(f"Failed to adjust focus settings: {e}")
-
-        success, frame = self.camera.read()
-        if not success:
-            if self.camera.isOpened():
-                self.camera.release()
-            raise Exception("Unable to read from camera")
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
-            temp_file_path = Path(temp_file.name)
-            cv2.imwrite(str(temp_file_path), frame)
-        self.camera.release()
-
-        return temp_file_path
+            self.logger.log_error(f"Failed to take picture: {e}")
+            raise
 
     @action
     def read_barcode(
@@ -116,7 +143,8 @@ class CameraNode(RestNode):
         autofocus: Optional[bool] = None,
     ) -> tuple[
         Annotated[
-            str, "The barcode read from the image, or None if no barcode was found"
+            str,
+            "The barcode read from the image, or an empty string if no barcode was found",
         ],
         Annotated[Path, "The picture taken by the camera"],
     ]:
@@ -124,80 +152,30 @@ class CameraNode(RestNode):
         Takes an image and returns the values of any barcodes present in the image. Camera focus can be adjusted using the provided parameters if necessary.
 
         Args:
-            camera (cv2.VideoCapture): The camera object to adjust focus for.
             focus (Optional[int]): The desired focus value (used if autofocus is disabled).
             autofocus (Optional[bool]): Whether to enable or disable autofocus.
 
         Returns:
-            ActionSucceded regardless of if barcode is collected or not.
-            Barcode field in ActionResult data dictionary will contain 'None' if no barcode was collected
+            A tuple containing:
+                - The barcode string (empty if no barcode found)
+                - Path to the captured image
 
         """
+        if self.camera_interface is None:
+            raise Exception("Camera interface is not initialized")
+
         try:
-            # take an image and collect the image path
-            image_path = self.take_picture(focus=focus, autofocus=autofocus)
-
-            # try to collect the barcode from the image
-            image = cv2.imread(image_path)
-            barcode = None
-
-            all_detected_barcodes = decode(image)
-            if all_detected_barcodes:
-                # Note: only collects the first in a potential list of barcodes
-                barcode = all_detected_barcodes[0].data.decode("utf-8")
-
-        except Exception as e:
-            raise e
-
-        return barcode, image_path
-
-    def adjust_focus_settings(
-        self,
-        camera: cv2.VideoCapture,
-        focus: Optional[int] = None,
-        autofocus: Optional[bool] = None,
-    ) -> None:
-        """
-        Adjusts the camera's focus, if necessary/possible, based on the provided parameters.
-
-        Args:
-            camera (cv2.VideoCapture): The camera object to adjust focus for.
-            focus (Optional[int]): The desired focus value (used if autofocus is disabled).
-            autofocus (Optional[bool]): Whether to enable or disable autofocus.
-
-        Raises:
-            Exception: If the camera does not support autofocus or manual focus.
-            ValueError: If the focus value is out of range.
-        """
-        focus_changed = False
-
-        if autofocus is not None:
-            self.logger.log_info(f"Setting autofocus to {autofocus}")
-            current_autofocus = camera.get(cv2.CAP_PROP_AUTOFOCUS)
-            if current_autofocus != (1 if autofocus else 0):
-                camera.set(cv2.CAP_PROP_AUTOFOCUS, 1 if autofocus else 0)
-                focus_changed = True
-
-        if not autofocus and focus is not None:
-            self.logger.log_info(f"Setting focus to {focus}")
-            if focus < 0 or focus > 255:
-                raise ValueError("Focus value must be between 0 and 255.")
-            current_focus = camera.get(cv2.CAP_PROP_FOCUS)
-            if current_focus != focus:
-                camera.set(cv2.CAP_PROP_FOCUS, focus)
-                focus_changed = True
-
-        if focus_changed:
-            self.logger.log_info(
-                "Focus settings changed. Waiting for focus to stabilize."
+            barcode, image_path = self.camera_interface.read_barcode(
+                focus=focus, autofocus=autofocus
             )
-            for _ in range(30):  # Discard 30 frames to allow focus to stabilize
-                camera.read()
-        else:
-            for _ in range(
-                5
-            ):  # Discard 5 frames in case the camera needs a moment for startup
-                camera.read()
+            if barcode:
+                self.logger.log_info(f"Barcode read: {barcode}")
+            else:
+                self.logger.log_info("No barcode detected in image")
+            return barcode, image_path
+        except Exception as e:
+            self.logger.log_error(f"Failed to read barcode: {e}")
+            raise
 
 
 if __name__ == "__main__":

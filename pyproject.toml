@@ -1,6 +1,6 @@
 [project]
 name = "camera_module"
-version = "2.0.0"
+version = "2.1.0"
 description = "A simple MADSci node module that supports taking snapshots with a camera or other video device."
 authors = [
     {name = "Ryan D. Lewis", email="ryan.lewis@anl.gov"},
@@ -24,5 +24,5 @@ homepage = "https://github.com/AD-SDL/camera_module"
 [dependency-groups]
 dev = [
     "pre-commit>=4.2.0",
-    "ipykernel>=6.29.5",
+    "ipykernel>=6.31.0",
 ]
