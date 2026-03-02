@@ -11,7 +11,7 @@ from madsci.common.types.node_types import RestNodeConfig
 from madsci.common.types.resource_types import Slot
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from camera_interface import CameraInterface
 
@@ -19,8 +19,10 @@ from camera_interface import CameraInterface
 class CameraNodeConfig(RestNodeConfig):
     """Configuration for the camera node module."""
 
-    camera_address: Union[int, str] = 0
-    """The camera address, either a number for windows or a device path in Linux/Mac."""
+    camera_address: Union[int, str] = Field(
+        default=0,
+        description="The camera device to use. An integer index (e.g. 0) selects by device order on Windows/Mac; a device path string (e.g. '/dev/video0') is used on Linux.",
+    )
 
     @field_validator("camera_address", mode="after")
     @classmethod
@@ -62,14 +64,12 @@ class CameraNode(RestNode):
             description="Template for camera capture deck slot. Represents the position where items are placed for picture taking.",
             required_overrides=["resource_name"],
             tags=["camera", "capture", "deck", "slot", "imaging"],
-            created_by=self.node_definition.node_id,
+            created_by=self.node_info.node_id,
             version="1.0.0",
         )
 
         # Initialize capture deck resource
-        deck_resource_name = "camera_capture_deck_" + str(
-            self.node_definition.node_name
-        )
+        deck_resource_name = "camera_capture_deck_" + str(self.node_info.node_name)
         self.capture_deck = self.resource_client.create_resource_from_template(
             template_name="camera_capture_deck_slot",
             resource_name=deck_resource_name,

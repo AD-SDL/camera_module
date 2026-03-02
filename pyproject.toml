@@ -8,13 +8,13 @@ authors = [
 ]
 dependencies = [
     "opencv-python-headless",
-    "madsci.node_module~=0.6.0",
-    "madsci.client~=0.6.0",
-    "madsci.common~=0.6.0",
+    "madsci.node_module==0.7.0rc1",
+    "madsci.client==0.7.0rc1",
+    "madsci.common==0.7.0rc1",
     "numpy<2",
     "pyzbar",
 ]
-requires-python = ">=3.9.1"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
@@ -25,4 +25,17 @@ homepage = "https://github.com/AD-SDL/camera_module"
 dev = [
     "pre-commit>=4.2.0",
     "ipykernel>=6.31.0",
+    "pydantic-settings-export>=1.0.3",
 ]
+
+[tool.pydantic_settings_export]
+project_dir = "."
+default_settings = [
+    "camera_rest_node:CameraNodeConfig",
+]
+
+[[tool.pydantic_settings_export.generators.markdown]]
+paths = ["docs/Configuration.md"]
+
+[[tool.pydantic_settings_export.generators.dotenv]]
+paths = [".env.example"]
