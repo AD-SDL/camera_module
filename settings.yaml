@@ -1,0 +1,3 @@
+node_name: camera_node_template
+node_description: A basic example of a MADSci camera module
+node_module_name: camera_node

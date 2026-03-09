@@ -3,6 +3,9 @@ services:
   camera_module:
     container_name: camera_module
     image: ghcr.io/ad-sdl/camera_module
+    env_file:
+      - path: .env
+        required: false
     environment:
       - USER_ID=${USER_ID:-1000}
       - GROUP_ID=${GROUP_ID:-1000}
@@ -12,8 +15,9 @@ services:
       tags:
         - ghcr.io/ad-sdl/camera_module:latest
         - ghcr.io/ad-sdl/camera_module:dev
-    command: python camera_module/src/camera_rest_node.py --node_definition definitions/camera_node_template.node.yaml
+    command: python camera_module/src/camera_rest_node.py
     volumes:
-      - ./definitions:/home/madsci/definitions
+      - ./settings.yaml:/home/madsci/settings.yaml
+      - ./.madsci:/home/madsci/.madsci
     privileged: true
     network_mode: host
