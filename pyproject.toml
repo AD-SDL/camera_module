@@ -8,9 +8,9 @@ authors = [
 ]
 dependencies = [
     "opencv-python-headless",
-    "madsci.node_module~=0.7",
-    "madsci.client~=0.7",
-    "madsci.common~=0.7",
+    "madsci.node_module~=0.8.0",
+    "madsci.client~=0.8.0",
+    "madsci.common~=0.8.0",
     "numpy<2",
     "pyzbar",
 ]
