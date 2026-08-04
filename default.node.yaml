@@ -1,0 +1,7 @@
+node_name: default.node
+node_id: 01K7NHM92BC7R9AQK10Z1XHFCG
+node_description: null
+node_type: device
+module_name: pf400_node
+module_version: 0.0.1
+capabilities: null
